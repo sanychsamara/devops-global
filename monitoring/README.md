@@ -54,6 +54,14 @@ scp monitoring/monitor.py monitoring/snmp.py proxmox/proxmox-devops/client.py \
 `check` posts a compact, actionable report to the Telegram group in `MON_TELEGRAM_CHAT`
 via the bot token in `MON_TELEGRAM_TOKEN` (full detail stays in `reports/*.md`).
 
+## Weekly LLM analysis
+
+`analyze.py` (weekly, after `check`) reads the last ~7 daily snapshots, asks Claude for a
+concise right-sizing narrative, and posts it to Telegram. Model defaults to
+`claude-haiku-4-5` (cheap — set `MON_LLM_MODEL` to override). Needs `MON_ANTHROPIC_KEY`
+and `pip install anthropic` (in `requirements.txt`); skips silently if the key is unset.
+No prompt caching — weekly calls share no prefix within the cache TTL.
+
 ## Config & secrets
 
 In `proxmox/.env` (gitignored):
@@ -68,7 +76,5 @@ In `proxmox/.env` (gitignored):
 
 ## Roadmap / TODO
 
-- [ ] Weekly **LLM narrative** analysis → Telegram (Anthropic API from the VM, or a
-  scheduled cloud routine reading git-pushed snapshots). Needs a credential decision.
-- [ ] git-push snapshots from the VM for versioned history (needs a GitHub token on the VM).
-- [ ] Install QEMU guest agent on `betbot` for in-guest free disk (needs VM shell access).
+- [ ] git-push snapshots from the VM for versioned history (optional; needs a GitHub token on the VM).
+- [ ] Install QEMU guest agent on `betbot` for in-guest free disk + guest-level RAM (needs VM shell access).

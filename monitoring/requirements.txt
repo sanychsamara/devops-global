@@ -1,3 +1,5 @@
-# Only needed for the Synology SNMP collector (monitoring/snmp.py).
-# The Proxmox collector (monitor.py against Proxmox) is stdlib-only.
+# Synology SNMP collector (monitoring/snmp.py):
 pysnmp>=7.1
+# Weekly LLM right-sizing narrative (monitoring/analyze.py):
+anthropic>=0.40
+# The Proxmox collector itself (monitor.py) is stdlib-only.
