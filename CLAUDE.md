@@ -39,6 +39,10 @@ the home Proxmox node, with optional weekly backups.
   key works directly. Login user `ubuntu`, no password, root via passwordless `sudo`.
 - **Backups = weekly `vzdump` → `NAS1`** (mode=snapshot, keep-weekly=4, Sun 03:00).
   Fast-rollback snapshots are a separate concern (`snapshot` subcommand).
+- **VM CPU type defaults to `host`.** The generic `kvm64`/`x86-64-v2` model masks
+  AVX/AVX2, which breaks NumPy/OpenBLAS (illegal instruction / slow math); `host`
+  exposes them and is safe on a single node (no live migration). Override per-VM with
+  `--cpu` or `PROXMOX_DEVOPS_CPU`.
 - **Secrets in `.env`** (gitignored); the API host is always the Tailscale name.
 
 ### Gotchas (hard-won — don't re-learn these)
@@ -60,3 +64,7 @@ the home Proxmox node, with optional weekly backups.
 
 - Windows host, **PowerShell** default — use PowerShell syntax for shell commands.
 - Never commit `proxmox/.env` or `*.key` (already in `.gitignore`).
+- **Always commit and push to `origin/master`** after any code change or major
+  documentation change (scripts, CLI, skills, `CLAUDE.md`, READMEs, `inventory/`).
+  Verify no secrets are staged first, and end commit messages with the
+  `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>` trailer.

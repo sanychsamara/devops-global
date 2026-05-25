@@ -16,6 +16,7 @@ Single-VM project — a Linux VM for web-scraping / research work.
 | Platform | Proxmox node `proxmox`, vmid **101** |
 | OS | Ubuntu 24.04 LTS (cloud image, cloned from template 9000) |
 | Resources | 2 vCPU · 2 GB RAM · 20 GB disk (`local-lvm`) |
+| CPU type | **`host`** — required so AVX/AVX2 are exposed for NumPy/OpenBLAS (default `kvm64` masks them, causing illegal-instruction crashes / slow math) |
 | Tailscale | `scrape-research.flamingo-banjo.ts.net` · `100.96.143.45` |
 | LAN | `192.168.1.192` (DHCP on `vmbr0`) |
 | Login | `ssh ubuntu@scrape-research.flamingo-banjo.ts.net` — key-based (no password); root via `sudo -i` |

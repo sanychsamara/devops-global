@@ -123,10 +123,12 @@ def cmd_create(client, env, args):
     })
     client.wait_task(upid, timeout=600)
 
-    print(f"[2/6] configure cores={args.cores} ram={args.ram}MB cloud-init")
+    cpu = args.cpu or env.get("PROXMOX_DEVOPS_CPU", "host")
+    print(f"[2/6] configure cores={args.cores} ram={args.ram}MB cpu={cpu} cloud-init")
     cfg = {
         "memory": args.ram,
         "cores": args.cores,
+        "cpu": cpu,  # 'host' exposes AVX/AVX2 etc. — needed by NumPy/OpenBLAS
         "ciuser": env.get("PROXMOX_DEVOPS_CIUSER", "ubuntu"),
         "ipconfig0": "ip=dhcp",
         "agent": "enabled=1",
@@ -254,6 +256,9 @@ def build_parser():
     c.add_argument("--name", required=True)
     c.add_argument("--ram", type=int, default=2048, help="MB (default 2048)")
     c.add_argument("--cores", type=int, default=2)
+    c.add_argument("--cpu", default=None,
+                   help="Proxmox CPU type (default: host — passes host flags like AVX2 for "
+                        "NumPy/OpenBLAS). Use e.g. x86-64-v2-AES for live-migration portability.")
     c.add_argument("--disk", type=int, default=20, help="GB (default 20)")
     c.add_argument("--template", type=int, default=None, help="template VMID (default from .env)")
     c.add_argument("--storage", default=None, help="disk storage (default from .env)")

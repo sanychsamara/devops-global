@@ -24,6 +24,7 @@ Map the user's words to flags:
 | `2GB ram` / `2048MB` | `--ram 2048` (convert GB→MB: GB×1024) |
 | `20GB disk` | `--disk 20` (GB) |
 | `4 cpus` / `2 cores` | `--cores N` (default 2) |
+| `cpu host` / `kvm64` / portable cpu | `--cpu <type>` (default `host`, which exposes AVX/AVX2 for NumPy) |
 | `setup tailscale` / `on tailnet` | `--tailscale` (zero-touch, default) |
 | `give me a login link` / `tailscale login url` | `--tailscale-url` (instead of `--tailscale`) |
 | `weekly backups` / `backup it` | `--backup weekly` |
