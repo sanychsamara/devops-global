@@ -1,0 +1,3 @@
+# Only needed for the Synology SNMP collector (monitoring/snmp.py).
+# The Proxmox collector (monitor.py against Proxmox) is stdlib-only.
+pysnmp>=7.1

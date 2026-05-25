@@ -1,0 +1,65 @@
+{
+  "date": "2026-05-25",
+  "collected_at": "2026-05-25T16:10:37",
+  "vms": [
+    {
+      "vmid": 100,
+      "name": "betbot",
+      "node": "proxmox",
+      "status": "running",
+      "uptime_h": 310.1,
+      "cores": 4,
+      "mem_alloc_gb": 2.15,
+      "disk_alloc_gb": 107.4,
+      "cpu_avg": 7.2,
+      "cpu_peak": 9.6,
+      "mem_avg": 76.5,
+      "mem_peak": 76.8,
+      "net_in_kbps": 20.1,
+      "net_out_kbps": 0.7,
+      "disk": null
+    },
+    {
+      "vmid": 101,
+      "name": "scrape-research",
+      "node": "proxmox",
+      "status": "running",
+      "uptime_h": 1.5,
+      "cores": 2,
+      "mem_alloc_gb": 2.15,
+      "disk_alloc_gb": 21.5,
+      "cpu_avg": 1.8,
+      "cpu_peak": 3.2,
+      "mem_avg": 52.2,
+      "mem_peak": 56.9,
+      "net_in_kbps": 91.9,
+      "net_out_kbps": 1.1,
+      "disk": [
+        {
+          "mount": "/",
+          "used_pct": 18,
+          "total_gb": 19.7
+        }
+      ]
+    }
+  ],
+  "synology": [
+    {
+      "name": "homenas",
+      "ip": "100.85.234.68",
+      "kind": "synology",
+      "cpu_busy_pct": 12,
+      "mem_used_pct": 33.6,
+      "mem_total_gb": 31.3,
+      "uptime_h": 1523.1,
+      "volumes": [
+        {
+          "name": "/volume1",
+          "used_pct": 25,
+          "total_gb": 11508.8
+        }
+      ],
+      "status": "ok"
+    }
+  ]
+}

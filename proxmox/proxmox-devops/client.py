@@ -30,7 +30,7 @@ def load_env(path):
                 env[k.strip()] = v.strip().strip('"').strip("'")
     # Real environment variables win over the file.
     for k, v in os.environ.items():
-        if k.startswith("PVE_") or k.startswith("PROXMOX_DEVOPS_") or k.startswith("TS_"):
+        if k.startswith(("PVE_", "PROXMOX_DEVOPS_", "TS_", "MON_")):
             env[k] = v
     return env
 
