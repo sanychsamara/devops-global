@@ -214,13 +214,15 @@ def telegram_text(vms, syn):
     for v in vms:
         L.append(f"{v['name']}: cpu {v.get('cpu_avg')}% avg, ram {v.get('mem_avg')}% of {v['mem_alloc_gb']}GB")
         L += [f"  - {n}" for n in vm_verdict(v) if not n.startswith(("Healthy", "No guest"))]
+        L.append("")  # blank line between hosts
     for s in syn:
         if s.get("status") == "ok":
             L.append(f"{s['name']} (NAS): cpu {s['cpu_busy_pct']}%, ram {s['mem_used_pct']}% of {s['mem_total_gb']}GB")
             L += [f"  - {n}" for n in syn_verdict(s) if not n.startswith("Healthy")]
         else:
             L.append(f"{s['name']} (NAS): {s.get('status')}")
-    return "\n".join(L)
+        L.append("")  # blank line between hosts
+    return "\n".join(L).rstrip()
 
 
 def telegram_notify(env, text):
