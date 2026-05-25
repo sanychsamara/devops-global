@@ -27,6 +27,8 @@ from client import ProxmoxClient, ProxmoxError, load_env  # noqa: E402
 
 DATA = os.path.join(HERE, "data")
 REPORTS = os.path.join(HERE, "reports")
+# Config/secrets: MON_ENV override (for the monitor VM) else proxmox/.env.
+ENV_FILE = os.environ.get("MON_ENV") or os.path.join(REPO, "proxmox", ".env")
 
 # Right-sizing thresholds (percent of allocation)
 RAM_HIGH, RAM_WATCH, RAM_LOW = 80, 70, 30
@@ -206,12 +208,44 @@ def write_report(vms, syn):
     return path
 
 
+def telegram_text(vms, syn):
+    """Compact, actionable summary for a chat message (full detail is in the .md)."""
+    L = [f"Homelab report {datetime.date.today().isoformat()}", ""]
+    for v in vms:
+        L.append(f"{v['name']}: cpu {v.get('cpu_avg')}% avg, ram {v.get('mem_avg')}% of {v['mem_alloc_gb']}GB")
+        L += [f"  - {n}" for n in vm_verdict(v) if not n.startswith(("Healthy", "No guest"))]
+    for s in syn:
+        if s.get("status") == "ok":
+            L.append(f"{s['name']} (NAS): cpu {s['cpu_busy_pct']}%, ram {s['mem_used_pct']}% of {s['mem_total_gb']}GB")
+            L += [f"  - {n}" for n in syn_verdict(s) if not n.startswith("Healthy")]
+        else:
+            L.append(f"{s['name']} (NAS): {s.get('status')}")
+    return "\n".join(L)
+
+
+def telegram_notify(env, text):
+    token, chat = env.get("MON_TELEGRAM_TOKEN"), env.get("MON_TELEGRAM_CHAT")
+    if not (token and chat):
+        return False
+    import urllib.parse
+    import urllib.request
+    body = urllib.parse.urlencode({"chat_id": chat, "text": text[:4000]}).encode()
+    try:
+        urllib.request.urlopen(
+            urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=body),
+            timeout=15)
+        return True
+    except Exception as e:  # noqa: BLE001
+        print("telegram error:", e)
+        return False
+
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "check"
     if mode not in ("snapshot", "report", "check"):
         print("usage: monitor.py [snapshot|report|check]")
         sys.exit(2)
-    env = load_env(os.path.join(REPO, "proxmox", ".env"))
+    env = load_env(ENV_FILE)
     client = ProxmoxClient(env)
     vms = collect_proxmox(client)
     syn = collect_synology(env)
@@ -219,6 +253,8 @@ def main():
         print("snapshot ->", write_snapshot(vms, syn))
     if mode in ("report", "check"):
         print("report   ->", write_report(vms, syn))
+    if mode == "check" and telegram_notify(env, telegram_text(vms, syn)):
+        print("telegram -> sent")
 
 
 if __name__ == "__main__":
