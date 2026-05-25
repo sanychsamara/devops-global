@@ -10,7 +10,7 @@ _Last updated: 2026-05-25._
 |---------|------|----------|----------------|-------|------|
 | [research](research.md) | **scrape-research** | Proxmox `proxmox` · vmid 101 | scrape-research.flamingo-banjo.ts.net · 100.96.143.45 (LAN 192.168.1.192) | Ubuntu 24.04 · 2 vCPU · 2 GB · 20 GB | web-scraping / research VM |
 | [aperil](aperil.md) | **aperil-bot** | Synology NAS (⚠️ not Proxmox) | aperil.flamingo-banjo.ts.net · 100.110.104.89 | TBD | aperil bot |
-| [betbot](betbot.md) | **betbot** | Proxmox `proxmox` · vmid 100 | betbot.flamingo-banjo.ts.net · 100.100.152.29 | Linux · 4 vCPU · 2 GB · 100 GB | Kalshi betting bot |
+| [betbot](betbot.md) | **betbot** | Proxmox `proxmox` · vmid 100 | betbot.flamingo-banjo.ts.net · 100.100.152.29 | Linux · 4 vCPU · 4 GB · 100 GB | Kalshi betting bot |
 | [home-assistant](home-assistant.md) | **Home Assistant** | Synology `homenas` | homenas.flamingo-banjo.ts.net · 100.85.234.68 | appliance | home automation |
 
 ## Platforms at a glance
