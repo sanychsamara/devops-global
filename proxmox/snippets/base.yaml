@@ -1,0 +1,5 @@
+#cloud-config
+# Base vendor snippet used for VMs created WITHOUT Tailscale.
+# Ensures the QEMU guest agent is present so proxmox-devops can read the VM's IP.
+runcmd:
+  - [ bash, -c, "export DEBIAN_FRONTEND=noninteractive; apt-get update && apt-get install -y qemu-guest-agent && systemctl enable --now qemu-guest-agent || true" ]

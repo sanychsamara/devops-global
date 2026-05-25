@@ -1,0 +1,9 @@
+#cloud-config
+# Mode B — interactive login. No auth key baked in. Tailscale prints a login URL
+# which proxmox-devops reads back via the guest agent (cat /var/log/tailscale-up.log).
+runcmd:
+  - [ bash, -c, "export DEBIAN_FRONTEND=noninteractive; apt-get update && apt-get install -y qemu-guest-agent curl" ]
+  - [ bash, -c, "systemctl enable --now qemu-guest-agent || true" ]
+  - [ bash, -c, "curl -fsSL https://tailscale.com/install.sh | sh" ]
+  # Run `tailscale up` in the background so the login URL is captured to a log file.
+  - [ bash, -c, "nohup tailscale up --hostname=\"$(hostname)\" --accept-routes > /var/log/tailscale-up.log 2>&1 &" ]

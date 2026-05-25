@@ -1,0 +1,2 @@
+# proxmox-devops uses the Python standard library only (urllib, ssl, json, argparse).
+# No third-party packages required — works with any Python 3.8+.

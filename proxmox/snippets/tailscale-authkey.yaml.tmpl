@@ -1,0 +1,11 @@
+#cloud-config
+# Mode A — zero-touch Tailscale join via a reusable auth key.
+# This is a cloud-init VENDOR-data snippet. Proxmox does not generate vendor-data,
+# so this merges cleanly with the user-data Proxmox builds (user, ssh keys, hostname).
+# `__TS_AUTHKEY__` is substituted by setup/20-enable-snippets.sh from $TS_AUTHKEY.
+runcmd:
+  - [ bash, -c, "export DEBIAN_FRONTEND=noninteractive; apt-get update && apt-get install -y qemu-guest-agent curl" ]
+  - [ bash, -c, "systemctl enable --now qemu-guest-agent || true" ]
+  - [ bash, -c, "curl -fsSL https://tailscale.com/install.sh | sh" ]
+  - [ bash, -c, "tailscale up --authkey='__TS_AUTHKEY__' --hostname=\"$(hostname)\" --accept-routes" ]
+  - [ bash, -c, "tailscale ip -4 > /var/log/tailscale-ip.txt 2>&1 || true" ]

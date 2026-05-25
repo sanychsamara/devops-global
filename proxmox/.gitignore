@@ -1,0 +1,11 @@
+# Secrets — never commit
+.env
+*.key
+*.secret
+pve_auth.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
