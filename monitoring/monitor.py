@@ -17,6 +17,7 @@ Synology part needs pysnmp (monitoring/requirements.txt) and is skipped if absen
 import datetime
 import json
 import os
+import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -153,19 +154,72 @@ def syn_verdict(rec):
     return notes or ["Healthy / right-sized."]
 
 
+# ── Generic SSH hosts (non-Proxmox, non-SNMP Linux boxes) ───────────────
+# One remote command; load-average CPU, real mem, root-fs disk, uptime. Point-in-time.
+SSH_METRICS = ("cut -d' ' -f1-3 /proc/loadavg; nproc; "
+               "awk '/MemTotal/{t=$2}/MemAvailable/{a=$2}END{print t,a}' /proc/meminfo; "
+               "df -Pk / | awk 'NR==2{print $2,$3}'; cut -d' ' -f1 /proc/uptime")
+
+
+def collect_ssh_hosts(env):
+    spec = (env.get("MON_SSH_HOSTS") or "").strip()  # name=user@host,comma-separated
+    if not spec:
+        return []
+    out = []
+    for pair in spec.split(","):
+        if "=" not in pair:
+            continue
+        name, target = (x.strip() for x in pair.split("=", 1))
+        rec = {"name": name, "kind": "ssh", "target": target}
+        try:
+            r = subprocess.run(
+                ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new",
+                 "-o", "ConnectTimeout=8", target, SSH_METRICS],
+                capture_output=True, text=True, timeout=20)
+            lines = r.stdout.strip().splitlines()
+            if r.returncode != 0 or len(lines) < 5:
+                raise RuntimeError((r.stderr.strip() or "no data")[:80])
+            load1 = float(lines[0].split()[0])
+            nproc = max(int(lines[1]), 1)
+            memt, mema = (int(x) for x in lines[2].split())
+            diskt, disku = (int(x) for x in lines[3].split())
+            upt = float(lines[4].split()[0])
+            rec.update({
+                "status": "ok",
+                "cpu_busy_pct": round(load1 / nproc * 100, 1),
+                "mem_used_pct": round((memt - mema) / memt * 100, 1),
+                "mem_total_gb": round(memt / 1024 / 1024, 1),
+                "uptime_h": round(upt / 3600, 1),
+                "volumes": [{"name": "/", "used_pct": round(disku / diskt * 100),
+                             "total_gb": round(diskt / 1024 / 1024, 1)}],
+            })
+        except subprocess.TimeoutExpired:
+            rec["status"], rec["error"] = "unreachable", "timeout (tailscale-ssh check?)"
+        except (RuntimeError, ValueError, ZeroDivisionError) as e:
+            rec["status"], rec["error"] = "unreachable", str(e)[:80]
+        out.append(rec)
+    return out
+
+
+def ssh_verdict(rec):
+    if rec.get("status") != "ok":
+        return [f"Unreachable via SSH ({rec.get('error', '?')})."]
+    return syn_verdict(rec)  # identical metric shape (mem_used_pct / cpu_busy_pct / volumes)
+
+
 # ── outputs ─────────────────────────────────────────────────────────────
-def write_snapshot(vms, syn):
+def write_snapshot(vms, syn, ssh):
     os.makedirs(DATA, exist_ok=True)
     today = datetime.date.today().isoformat()
     path = os.path.join(DATA, f"{today}.json")
     with open(path, "w", encoding="utf-8") as fh:
         json.dump({"date": today,
                    "collected_at": datetime.datetime.now().isoformat(timespec="seconds"),
-                   "vms": vms, "synology": syn}, fh, indent=2)
+                   "vms": vms, "synology": syn, "ssh": ssh}, fh, indent=2)
     return path
 
 
-def write_report(vms, syn):
+def write_report(vms, syn, ssh):
     os.makedirs(REPORTS, exist_ok=True)
     today = datetime.date.today().isoformat()
     path = os.path.join(REPORTS, f"{today}.md")
@@ -194,6 +248,18 @@ def write_report(vms, syn):
                 L.append(f"| {s['name']} | — | — | — | {s['status']} |")
         L += ["", "_`homenas` also hosts Home Assistant and aperil-bot (containers share its "
               "resources; no per-container SNMP)._"]
+    if ssh:
+        L += ["", "## Other hosts (SSH, point-in-time)", "",
+              "| Host | uptime | cpu (load/core) | RAM used (total) | disk |",
+              "|------|--------|-----------------|------------------|------|"]
+        for s in ssh:
+            if s.get("status") == "ok":
+                d = s["volumes"][0]
+                L.append(f"| {s['name']} | {s['uptime_h']}h | {s['cpu_busy_pct']}% | "
+                         f"{s['mem_used_pct']}% ({s['mem_total_gb']}GB) | "
+                         f"{d['used_pct']}%/{d['total_gb']}GB |")
+            else:
+                L.append(f"| {s['name']} | — | — | — | {s.get('status')} |")
     L += ["", "## Right-sizing recommendations", ""]
     for v in vms:
         L.append(f"**{v['name']}** (vmid {v['vmid']})")
@@ -203,12 +269,16 @@ def write_report(vms, syn):
         L.append(f"**{s['name']}** (NAS)")
         L += [f"- {n}" for n in syn_verdict(s)]
         L.append("")
+    for s in ssh:
+        L.append(f"**{s['name']}** (ssh)")
+        L += [f"- {n}" for n in ssh_verdict(s)]
+        L.append("")
     with open(path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(L))
     return path
 
 
-def telegram_text(vms, syn):
+def telegram_text(vms, syn, ssh):
     """Compact, actionable summary for a chat message (full detail is in the .md)."""
     L = [f"Homelab report {datetime.date.today().isoformat()}", ""]
     for v in vms:
@@ -221,6 +291,13 @@ def telegram_text(vms, syn):
             L += [f"  - {n}" for n in syn_verdict(s) if not n.startswith("Healthy")]
         else:
             L.append(f"{s['name']} (NAS): {s.get('status')}")
+        L.append("")  # blank line between hosts
+    for s in ssh:
+        if s.get("status") == "ok":
+            L.append(f"{s['name']} (ssh): cpu {s['cpu_busy_pct']}%, ram {s['mem_used_pct']}% of {s['mem_total_gb']}GB")
+            L += [f"  - {n}" for n in ssh_verdict(s) if not n.startswith("Healthy")]
+        else:
+            L.append(f"{s['name']} (ssh): {s.get('status')}")
         L.append("")  # blank line between hosts
     return "\n".join(L).rstrip()
 
@@ -251,11 +328,12 @@ def main():
     client = ProxmoxClient(env)
     vms = collect_proxmox(client)
     syn = collect_synology(env)
+    ssh = collect_ssh_hosts(env)
     if mode in ("snapshot", "check"):
-        print("snapshot ->", write_snapshot(vms, syn))
+        print("snapshot ->", write_snapshot(vms, syn, ssh))
     if mode in ("report", "check"):
-        print("report   ->", write_report(vms, syn))
-    if mode == "check" and telegram_notify(env, telegram_text(vms, syn)):
+        print("report   ->", write_report(vms, syn, ssh))
+    if mode == "check" and telegram_notify(env, telegram_text(vms, syn, ssh)):
         print("telegram -> sent")
 
 

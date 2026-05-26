@@ -24,6 +24,7 @@ kept as a **handoff target** for delegating work to another agent.
 ## Notes
 
 - Use for handing off tasks to Manus; document any project that lands here.
-- **Monitoring is not yet automated.** The headless `monitor` VM can't pull metrics over
-  Tailscale SSH because check-mode requires an interactive browser approval that a tagged
-  node can't complete. Options under discussion (ACL `accept` rule vs. push). See below.
+- **Monitoring:** wired into the monitor VM as an SSH-pull host (`MON_SSH_HOSTS`). It will
+  start reporting once a Tailscale ACL `ssh` rule with `"action": "accept"` (no check) lets
+  the **headless** `monitor` node SSH in as `root` — check-mode needs a browser approval the
+  monitor node can't do, so until then it shows "unreachable". See `monitoring/README.md`.

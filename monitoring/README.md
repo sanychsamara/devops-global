@@ -11,6 +11,13 @@ writes a daily JSON snapshot, and produces a plain-English right-sizing report
 |---------|--------|--------|
 | Proxmox VMs (`scrape-research`, `betbot`) | Proxmox API **RRD week average** + QEMU guest agent (in-guest disk) | none |
 | Synology `homenas` (also runs Home Assistant + aperil-bot) | **SNMPv3** (SHA, authNoPriv) | native DSM SNMP |
+| Other Linux hosts (`manus-sandbox`) | **SSH** one-shot metrics (loadavg/mem/disk/uptime) | none — needs non-interactive SSH |
+
+> **SSH hosts** are set in `MON_SNMP`-style `MON_SSH_HOSTS=name=user@host`. The monitor VM
+> must reach them over SSH **without an interactive prompt**. For Tailscale SSH hosts in
+> check-mode (e.g. `manus-sandbox`), a headless node can't complete the browser check — add
+> a Tailscale ACL `ssh` rule with `"action": "accept"` (no check) for the monitor node →
+> host. Container metrics (loadavg/mem) may reflect the host, not cgroup limits.
 
 - Proxmox gives true week **averages + peaks** (sampled ~every 30 min). Synology
   SNMP is **point-in-time** at each run — the daily snapshots build the trend.
