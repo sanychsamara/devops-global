@@ -24,7 +24,11 @@ kept as a **handoff target** for delegating work to another agent.
 ## Notes
 
 - Use for handing off tasks to Manus; document any project that lands here.
-- **Monitoring:** wired into the monitor VM as an SSH-pull host (`MON_SSH_HOSTS`). It will
-  start reporting once a Tailscale ACL `ssh` rule with `"action": "accept"` (no check) lets
-  the **headless** `monitor` node SSH in as `root` — check-mode needs a browser approval the
-  monitor node can't do, so until then it shows "unreachable". See `monitoring/README.md`.
+- **Monitoring:** wired as an SSH-pull host (`MON_SSH_HOSTS=root@…`). Tailscale is set up:
+  `monitor` is tagged `tag:monitor`, this box `tag:manus`, with a **grant** (`tag:monitor →
+  tag:manus tcp:22`) + an `ssh` `accept` rule for `root` (no check). Reports CPU(load)/RAM/
+  disk/uptime **when the box is online**. The sandbox is frequently **offline** (Manus spins
+  it down when idle) → shows "unreachable" until it's up. Verified the wiring 2026-05-26
+  (node was offline at the time, last seen 4h prior).
+- ⚠️ Tagging changed this node's owner to `tagged-devices` (no longer user-owned); confirm
+  the Manus agent can still bring it up / access it. If tagging disrupts Manus, drop the tag.
