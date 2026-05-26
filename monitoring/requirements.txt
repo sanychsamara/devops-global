@@ -1,5 +1,3 @@
 # Synology SNMP collector (monitoring/snmp.py):
 pysnmp>=7.1
-# Weekly LLM right-sizing narrative (monitoring/analyze.py):
-anthropic>=0.40
-# The Proxmox collector itself (monitor.py) is stdlib-only.
+# monitor.py (Proxmox) and analyze.py (LLM via OpenRouter) are stdlib-only — no SDK.

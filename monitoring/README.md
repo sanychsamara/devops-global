@@ -56,11 +56,11 @@ via the bot token in `MON_TELEGRAM_TOKEN` (full detail stays in `reports/*.md`).
 
 ## Weekly LLM analysis
 
-`analyze.py` (weekly, after `check`) reads the last ~7 daily snapshots, asks Claude for a
-concise right-sizing narrative, and posts it to Telegram. Model defaults to
-`claude-haiku-4-5` (cheap — set `MON_LLM_MODEL` to override). Needs `MON_ANTHROPIC_KEY`
-and `pip install anthropic` (in `requirements.txt`); skips silently if the key is unset.
-No prompt caching — weekly calls share no prefix within the cache TTL.
+`analyze.py` (weekly, after `check`) reads the last ~7 daily snapshots, asks an Anthropic
+model **via OpenRouter** for a concise right-sizing narrative, and posts it to Telegram.
+Auth: `OPENROUTER_API_KEY` (read from the environment, or from `.env`). Model defaults to
+`anthropic/claude-haiku-4.5` (cheap — set `MON_LLM_MODEL` to override). Stdlib HTTP, no
+SDK; skips silently if the key is unset.
 
 ## Config & secrets
 
