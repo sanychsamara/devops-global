@@ -13,7 +13,7 @@ _Last updated: 2026-05-25._
 | [betbot](betbot.md) | **betbot** | Proxmox `proxmox` · vmid 100 | betbot.flamingo-banjo.ts.net · 100.100.152.29 | Linux · 4 vCPU · 8 GB · 100 GB | Kalshi betting bot |
 | [home-assistant](home-assistant.md) | **Home Assistant** | Synology `homenas` | homenas.flamingo-banjo.ts.net · 100.85.234.68 | appliance | home automation |
 | [monitoring](../monitoring/README.md) | **monitor** | Proxmox `proxmox` · vmid 102 | monitor.flamingo-banjo.ts.net · 100.120.34.88 | Ubuntu 24.04 · 1 vCPU · 2 GB · 10 GB | metrics collector (cron → Telegram) |
-| [manus-sandbox](manus-sandbox.md) | **manus-sandbox** | Manus sandbox (container, not Proxmox) | manus-sandbox.flamingo-banjo.ts.net · 100.91.181.84 | Linux 6.1 container | handoff target for the Manus agent |
+| [manus-sandbox](manus-sandbox.md) | **manus-sandbox** | GCP VM `cloud-pc-9ga3ux78` (Manus; not Proxmox) | manus-sandbox-1.flamingo-banjo.ts.net · 100.116.125.109 (public 136.118.155.212) | Linux · ~4 GB · 67 GB | Manus operator VM / handoff target (monitored) |
 
 ## Platforms at a glance
 
