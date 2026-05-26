@@ -1,34 +1,31 @@
 # manus-sandbox
 
-Permanent sandbox attached to the **Manus** AI agent. No projects of ours run here yet —
-kept as a **handoff target** for delegating work to another agent.
+The **always-on VM that runs the Manus agent** (its `manus-computer-operator` process).
+Kept as a **handoff target** for delegating work to Manus. No projects of ours run here.
 
 ## Pointers
 
-- **Tailscale:** `manus-sandbox.flamingo-banjo.ts.net` · `100.91.181.84`
-- **Platform:** containerized Linux sandbox (hostname `41263648be78`, kernel 6.1.102),
-  managed by Manus — **not** on our Proxmox.
-- **Owner:** Manus agent (external).
+- **Platform:** GCP VM — hostname `cloud-pc-9ga3ux78`, kernel `6.17.0-gcp`, ~4 GB RAM /
+  67 GB disk. Always on (uptime ~11 days). GCP internal IP `10.138.0.2`.
+- **Public IP:** `136.118.155.212` (SSH open, password auth).
+- **Owner:** Manus agent (external) — runs `~/.manus/manus-computer-operator`.
 
 ## Access
 
-- **SSH as `root` via Tailscale SSH** — authenticated by **tailnet identity, not your SSH key**:
+- **Break-glass SSH (public IP, password):** user `ubuntu` (has sudo). Password is in
+  `proxmox/.env` as `MANUS_SSH_PASSWORD` (gitignored — **not** committed). Use the helper
+  (no `sshpass` in our env, so it uses paramiko):
   ```bash
-  ssh root@manus-sandbox.flamingo-banjo.ts.net
+  python proxmox/manus_ssh.py "uptime"
+  python proxmox/manus_ssh.py --sudo "systemctl status tailscaled"
   ```
-  Port 22 is served by Tailscale SSH (no OpenSSH banner). The first connect triggers a
-  Tailscale browser check; once approved, the session opens as `root`.
-- Verified 2026-05-25: reachable on the tailnet; Tailscale SSH login as `root` works
-  interactively. Your private key is **not** used (Tailscale SSH brokers auth).
+- **Tailscale:** ⚠️ **not installed on this VM.** The tailnet node that briefly appeared as
+  `manus-sandbox` (kernel 6.1.102) was a *separate, ephemeral* sandbox Manus spins up per
+  task and tears down — it is not this box and is gone/offline.
 
-## Notes
+## Monitoring
 
-- Use for handing off tasks to Manus; document any project that lands here.
-- **Monitoring:** wired as an SSH-pull host (`MON_SSH_HOSTS=root@…`). Tailscale is set up:
-  `monitor` is tagged `tag:monitor`, this box `tag:manus`, with a **grant** (`tag:monitor →
-  tag:manus tcp:22`) + an `ssh` `accept` rule for `root` (no check). Reports CPU(load)/RAM/
-  disk/uptime **when the box is online**. The sandbox is frequently **offline** (Manus spins
-  it down when idle) → shows "unreachable" until it's up. Verified the wiring 2026-05-26
-  (node was offline at the time, last seen 4h prior).
-- ⚠️ Tagging changed this node's owner to `tagged-devices` (no longer user-owned); confirm
-  the Manus agent can still bring it up / access it. If tagging disrupts Manus, drop the tag.
+- Wired as an SSH-pull host (`MON_SSH_HOSTS`) with Tailscale set up on the tailnet side
+  (`tag:monitor → tag:manus`, grant `tcp:22` + ssh `accept` for root). But it can't report
+  until **this VM is on the tailnet** — i.e. Tailscale is installed here and joins as
+  `tag:manus`. Pending decision/install. See `monitoring/README.md`.
