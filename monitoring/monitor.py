@@ -319,22 +319,52 @@ def telegram_notify(env, text):
         return False
 
 
+# Verdict notes that are NOT alert-worthy (informational / fine).
+ALERT_BENIGN = ("Healthy", "over-provisioned", "mostly idle", "fairly high", "No guest agent")
+
+
+def alert_lines(vms, syn, ssh):
+    """Only the actionable findings — what to message when 'something is off'."""
+    out = []
+
+    def add(label, notes):
+        for n in notes:
+            if not any(b in n for b in ALERT_BENIGN):
+                out.append(f"{label}: {n}")
+
+    for v in vms:
+        add(v["name"], vm_verdict(v))
+    for s in syn:
+        add(f"{s['name']} (NAS)", syn_verdict(s))
+    for s in ssh:
+        add(f"{s['name']} (ssh)", ssh_verdict(s))
+    return out
+
+
 def main():
-    mode = sys.argv[1] if len(sys.argv) > 1 else "check"
-    if mode not in ("snapshot", "report", "check"):
-        print("usage: monitor.py [snapshot|report|check]")
+    mode = sys.argv[1] if len(sys.argv) > 1 else "alert"
+    if mode not in ("snapshot", "report", "check", "alert"):
+        print("usage: monitor.py [alert|report|check|snapshot]")
         sys.exit(2)
     env = load_env(ENV_FILE)
     client = ProxmoxClient(env)
     vms = collect_proxmox(client)
     syn = collect_synology(env)
     ssh = collect_ssh_hosts(env)
-    if mode in ("snapshot", "check"):
-        print("snapshot ->", write_snapshot(vms, syn, ssh))
-    if mode in ("report", "check"):
+    print("snapshot ->", write_snapshot(vms, syn, ssh))
+    if mode != "snapshot":
         print("report   ->", write_report(vms, syn, ssh))
-    if mode == "check" and telegram_notify(env, telegram_text(vms, syn, ssh)):
-        print("telegram -> sent")
+    if mode in ("report", "check"):          # always post the full report
+        if telegram_notify(env, telegram_text(vms, syn, ssh)):
+            print("telegram -> full report sent")
+    elif mode == "alert":                     # post ONLY if something is off
+        lines = alert_lines(vms, syn, ssh)
+        if lines:
+            msg = "⚠️ Homelab alert " + datetime.date.today().isoformat() + "\n\n" + "\n".join(lines)
+            if telegram_notify(env, msg):
+                print("telegram -> alert sent (%d issue(s))" % len(lines))
+        else:
+            print("no alerts - nothing sent")
 
 
 if __name__ == "__main__":

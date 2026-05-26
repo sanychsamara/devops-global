@@ -29,11 +29,15 @@ writes a daily JSON snapshot, and produces a plain-English right-sizing report
 ## Usage
 
 ```bash
-pip install -r monitoring/requirements.txt        # one-time, for the Synology SNMP part
-python monitoring/monitor.py check                # snapshot + report
-python monitoring/monitor.py snapshot             # data/YYYY-MM-DD.json only
-python monitoring/monitor.py report               # reports/YYYY-MM-DD.md only
+pip install -r monitoring/requirements.txt   # one-time, for the Synology SNMP part
+python monitoring/monitor.py alert     # collect; Telegram ONLY if something is off (default)
+python monitoring/monitor.py report    # collect + ALWAYS post the full report to Telegram
+python monitoring/monitor.py check     # alias of report (always posts)
+python monitoring/monitor.py snapshot  # collect to data/ only, no report, no Telegram
 ```
+
+Every mode writes a daily snapshot to `data/`. `alert` is the default so accidental/manual
+runs never spam the chat — they only message when there's an actionable finding.
 
 Outputs:
 - `monitoring/data/YYYY-MM-DD.json` — raw normalized snapshot (history; no DB).
@@ -47,8 +51,8 @@ it), so collection runs unattended on a tiny always-on VM on the tailnet:
 
 On the VM:
 - `~/mon/{monitor.py,snmp.py,client.py,.env}` + a `~/mon/venv` (with `pysnmp`).
-- `crontab`: daily `snapshot` (08:00 UTC) and weekly `check` (Mon 08:05 UTC → Telegram).
-  Logs to `~/mon/cron.log`.
+- `crontab`: daily **`alert`** (08:00 UTC — Telegram only if something is off) and weekly
+  **`analyze.py`** (Mon 08:10 UTC — LLM narrative report → Telegram). Logs to `~/mon/cron.log`.
 
 Update the code on the VM after changing it here:
 ```bash
@@ -58,8 +62,11 @@ scp monitoring/monitor.py monitoring/snmp.py proxmox/proxmox-devops/client.py \
 
 ## Delivery — Telegram
 
-`check` posts a compact, actionable report to the Telegram group in `MON_TELEGRAM_CHAT`
-via the bot token in `MON_TELEGRAM_TOKEN` (full detail stays in `reports/*.md`).
+Two channels only — no per-run spam: the **daily `alert`** posts to the `MON_TELEGRAM_CHAT`
+group *only when something is off* (RAM tight, disk high, host unreachable, …), and the
+**weekly LLM narrative** (`analyze.py`, Mondays) is the regular report. `monitor.py report`
+posts the full rules-based report on demand. Full detail always lands in `reports/*.md`.
+Bot token is `MON_TELEGRAM_TOKEN`.
 
 ## Weekly LLM analysis
 
